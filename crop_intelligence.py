@@ -139,16 +139,17 @@ def get_crop_intelligence(N, P, K, pH, rainfall, temp, humidity):
         detailed_info = intercrop_model.get_detailed_recommendation(crop_pred)
 
         return {
-            "Crop_Prediction": crop_pred,
-            "Recommended_Fertilizer": fert_pred,
-            "Days_to_Harvest": days_pred,
-            "Expected_Rainfall_mm": round(expected_rainfall, 2),
-            "Water_Requirement_mm": round(water_pred, 2),
-            "Water_to_Store_mm": round(water_to_store, 2),
-            "Water_to_Store_Litres_per_ha": round(water_to_store * 10000, 2),
+            "Crop_Prediction": str(crop_pred),
+            "Recommended_Fertilizer": str(fert_pred),
+            "Days_to_Harvest": int(days_pred),
+            "Expected_Rainfall_mm": float(round(expected_rainfall, 2)),
+            "Water_Requirement_mm": float(round(water_pred, 2)),
+            "Water_to_Store_mm": float(round(water_to_store, 2)),
+            "Water_to_Store_Litres_per_ha": float(round(water_to_store * 10000, 2)),
             "Intercrop_Basic": basic_info if basic_info else "No intercrop data found",
             "Intercrop_Detailed": detailed_info if detailed_info else "No detailed data found"
         }
+
 
     except Exception as e:
         return {"error": str(e)}

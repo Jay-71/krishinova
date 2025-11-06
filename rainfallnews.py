@@ -20,7 +20,7 @@ def get_latest_agriculture_news_maharashtra(limit=15, translate_to_english=False
         if resp.status_code != 200:
             return {"error": f"Failed to fetch news: {resp.status_code}"}
 
-        soup = BeautifulSoup(resp.content, "xml")
+        soup = BeautifulSoup(resp.content, "lxml-xml")
         items = soup.find_all("item")[:limit]
         if not items:
             return {"error": "No news found."}
