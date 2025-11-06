@@ -1,0 +1,6 @@
+Flask
+requests
+pandas
+beautifulsoup4
+deep-translator
+gunicorn
