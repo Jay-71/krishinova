@@ -1,50 +1,50 @@
 import pandas as pd
 
-def display_schemes(csv_path):
+def get_all_schemes(csv_path="scheme.csv"):
+    """
+    Reads the agriculture schemes CSV file and returns structured data.
+
+    Args:
+        csv_path (str): Path to the CSV file (default = 'scheme.csv')
+
+    Returns:
+        dict: {"total_schemes": int, "schemes": [ ... list of scheme dicts ... ]}
+    """
     try:
         # Load dataset
         df = pd.read_csv(csv_path)
 
-        print("\n✅ Maharashtra Agriculture Schemes Dataset Loaded Successfully!")
-        print(f"Total Schemes Found: {len(df)}\n")
+        # Validate required columns
+        required_cols = [
+            "scheme_name",
+            "highlight",
+            "detailed_overview",
+            "benefits",
+            "eligibility",
+            "required_documents",
+            "source_link"
+        ]
+        missing_cols = [col for col in required_cols if col not in df.columns]
+        if missing_cols:
+            return {"error": f"Missing columns in CSV: {', '.join(missing_cols)}"}
 
-        # Display list of schemes with highlights
-        for i, row in df.iterrows():
-            print(f"🔹 {i+1}. {row['scheme_name']}")
-            print(f"   💡 Highlight: {row['highlight']}\n")
+        # Convert to list of dictionaries
+        scheme_list = df.to_dict(orient="records")
 
-        # Allow user to view scheme details
-        while True:
-            choice = input("Enter scheme number to view details (0 to exit): ")
-
-            if choice == '0':
-                print("\n👋 Exiting. Thank you!")
-                break
-
-            try:
-                idx = int(choice) - 1
-                if 0 <= idx < len(df):
-                    scheme = df.iloc[idx]
-                    print("\n" + "="*50)
-                    print(f"📘 Scheme Name: {scheme['scheme_name']}")
-                    print(f"💡 Highlight: {scheme['highlight']}")
-                    print(f"📝 Detailed Overview: {scheme['detailed_overview']}")
-                    print(f"🎁 Benefits: {scheme['benefits']}")
-                    print(f"👨‍🌾 Eligibility: {scheme['eligibility']}")
-                    print(f"📄 Required Documents: {scheme['required_documents']}")
-                    print(f"🔗 Source Link: {scheme['source_link']}")
-                    print("="*50 + "\n")
-                else:
-                    print("⚠️ Invalid number! Try again.")
-            except ValueError:
-                print("⚠️ Please enter a valid number.")
+        return {
+            "total_schemes": len(scheme_list),
+            "schemes": scheme_list
+        }
 
     except FileNotFoundError:
-        print(f"❌ Error: File '{csv_path}' not found.")
+        return {"error": f"File '{csv_path}' not found."}
+    except pd.errors.EmptyDataError:
+        return {"error": "CSV file is empty or corrupted."}
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        return {"error": str(e)}
 
 
-# Example usage
+# Optional test for standalone use
 if __name__ == "__main__":
-    display_schemes("krishinova\scheme.csv")
+    from pprint import pprint
+    pprint(get_all_schemes("scheme.csv"))

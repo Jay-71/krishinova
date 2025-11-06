@@ -7,55 +7,88 @@ DEFAULT_LON = 73.8567
 
 def get_weather_forecast(lat=DEFAULT_LAT, lon=DEFAULT_LON, days=16):
     """
-    Fetch 16-day weather forecast (avg temperature, windspeed, humidity, rainfall)
-    using Open-Meteo API.
+    Fetches weather forecast (up to 16 days) from Open-Meteo API.
+
+    Args:
+        lat (float): Latitude of location
+        lon (float): Longitude of location
+        days (int): Number of forecast days (max 16)
+
+    Returns:
+        dict: {"location": {...}, "forecast": [ ... daily data ... ]}
     """
-    url = "https://api.open-meteo.com/v1/forecast"
-    
-    params = {
-        "latitude": lat,
-        "longitude": lon,
-        "forecast_days": days,
-        "daily": (
-            "temperature_2m_max,temperature_2m_min,"
-            "windspeed_10m_max,precipitation_sum"
-        ),
-        "hourly": "relative_humidity_2m",
-        "timezone": "auto"
-    }
+    try:
+        url = "https://api.open-meteo.com/v1/forecast"
+        params = {
+            "latitude": lat,
+            "longitude": lon,
+            "forecast_days": days,
+            "daily": (
+                "temperature_2m_max,temperature_2m_min,"
+                "windspeed_10m_max,precipitation_sum"
+            ),
+            "hourly": "relative_humidity_2m",
+            "timezone": "auto"
+        }
 
-    response = requests.get(url, params=params)
-    response.raise_for_status()
-    data = response.json()
+        # Fetch API data
+        response = requests.get(url, params=params, timeout=10)
+        if response.status_code != 200:
+            return {"error": f"Failed to fetch weather data ({response.status_code})"}
 
-    # --- Daily data ---
-    daily_df = pd.DataFrame(data["daily"])
-    daily_df["date"] = pd.to_datetime(daily_df["time"]).dt.date
-    daily_df["avg_temperature"] = (daily_df["temperature_2m_max"] + daily_df["temperature_2m_min"]) / 2
-    daily_df.rename(columns={
-        "windspeed_10m_max": "avg_windspeed",
-        "precipitation_sum": "rainfall_mm"
-    }, inplace=True)
+        data = response.json()
 
-    # --- Hourly humidity ---
-    hourly_df = pd.DataFrame(data["hourly"])
-    hourly_df["time"] = pd.to_datetime(hourly_df["time"])
-    hourly_df["date"] = hourly_df["time"].dt.date
-    humidity_daily = hourly_df.groupby("date")["relative_humidity_2m"].mean().reset_index()
-    humidity_daily.rename(columns={"relative_humidity_2m": "avg_relative_humidity"}, inplace=True)
+        # --- Daily forecast ---
+        daily_df = pd.DataFrame(data["daily"])
+        daily_df["date"] = pd.to_datetime(daily_df["time"]).dt.date
+        daily_df["avg_temperature"] = (
+            daily_df["temperature_2m_max"] + daily_df["temperature_2m_min"]
+        ) / 2
+        daily_df.rename(columns={
+            "windspeed_10m_max": "avg_windspeed",
+            "precipitation_sum": "rainfall_mm"
+        }, inplace=True)
 
-    # --- Merge daily & humidity ---
-    final_df = pd.merge(daily_df, humidity_daily, on="date", how="left")
+        # --- Hourly humidity ---
+        hourly_df = pd.DataFrame(data["hourly"])
+        hourly_df["time"] = pd.to_datetime(hourly_df["time"])
+        hourly_df["date"] = hourly_df["time"].dt.date
+        humidity_daily = (
+            hourly_df.groupby("date")["relative_humidity_2m"]
+            .mean()
+            .reset_index()
+            .rename(columns={"relative_humidity_2m": "avg_relative_humidity"})
+        )
 
-    # --- Select relevant columns ---
-    final_df = final_df[["date", "avg_temperature", "avg_windspeed", "avg_relative_humidity", "rainfall_mm"]]
+        # --- Merge & clean ---
+        final_df = pd.merge(daily_df, humidity_daily, on="date", how="left")
+        final_df = final_df[[
+            "date",
+            "avg_temperature",
+            "avg_windspeed",
+            "avg_relative_humidity",
+            "rainfall_mm"
+        ]]
 
-    return final_df
+        # Convert DataFrame to JSON-friendly structure
+        forecast_data = final_df.to_dict(orient="records")
+
+        # Return nicely structured JSON
+        return {
+            "location": {
+                "latitude": lat,
+                "longitude": lon,
+                "timezone": data.get("timezone", "auto")
+            },
+            "forecast_days": len(forecast_data),
+            "forecast": forecast_data
+        }
+
+    except Exception as e:
+        return {"error": str(e)}
 
 
+# Optional: quick standalone test
 if __name__ == "__main__":
-    print("Fetching 16-day weather forecast for Pune...\n")
-    daily_forecast = get_weather_forecast()
-    
-    print("=== 16-Day Daily Forecast ===")
-    print(daily_forecast)
+    from pprint import pprint
+    pprint(get_weather_forecast(days=5))
