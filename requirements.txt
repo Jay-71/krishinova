@@ -1,7 +1,10 @@
-Flask
-requests
+Flask>=2.3
+gunicorn
 pandas
+numpy
+requests
 beautifulsoup4
 deep-translator
-gunicorn
+scikit-learn
+xgboost
 joblib
