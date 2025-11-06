@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 from crop_intelligence import get_crop_intelligence
 from rainfallnews import get_latest_agriculture_news_maharashtra
-from government_scheme import display_schemes
+from government_scheme import get_all_schemes
 from weather_forecast import get_weather_forecast
 import pandas as pd
 
@@ -46,8 +46,9 @@ from government_scheme import get_all_schemes
 
 @app.route("/api/schemes", methods=["GET"])
 def api_schemes():
-    csv_path = "scheme.csv"  # default location
+    csv_path = "scheme.csv"
     return jsonify(get_all_schemes(csv_path))
+
 
 
 # ----------------------------------------------------
